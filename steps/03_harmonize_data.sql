@@ -122,3 +122,22 @@ FROM silver.major_us_cities city
 JOIN silver.zip_codes_in_city zip ON city.geo_id = zip.city_geo_id
 JOIN silver.weather_forecast weather ON zip.zip_geo_name = weather.postal_code
 GROUP BY city.geo_id, city.geo_name, city.total_population;
+
+
+CREATE OR REPLACE VIEW silver.attractions AS
+SELECT
+    city.geo_id,
+    city.geo_name,
+    count(case when category_main = 'Aquarium' THEN 1 END) aquarium_cnt,
+    count(case when category_main = 'Zoo' THEN 1 END) zoo_cnt,
+    count(case when category_main = 'Korean Restaurant' THEN 1 END) korean_restaurant_cnt
+FROM us_addresses__poi.cybersyn.point_of_interest_index poi
+JOIN us_addresses__poi.cybersyn.point_of_interest_addresses_relationships poi_add 
+    ON poi_add.poi_id = poi.poi_id
+JOIN us_addresses__poi.cybersyn.us_addresses address 
+    ON address.address_id = poi_add.address_id
+JOIN silver.major_us_cities city ON city.geo_id = address.id_city
+WHERE true
+    AND category_main in ('Aquarium', 'Zoo', 'Korean Restaurant')
+    AND id_country = 'country/USA'
+GROUP BY city.geo_id, city.geo_name;
