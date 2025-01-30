@@ -4,34 +4,23 @@ Perform the following changes after switching to the "dev" branch
 -----------------------------------------------------------------
 
 -- Add this view definition at the placeholder near the end of steps/03_harmonize_data.sql
-View(
-    name="attractions",
-    columns=[
-        ViewColumn(name="geo_id"),
-        ViewColumn(name="geo_name"),
-        ViewColumn(name="aquarium_cnt"),
-        ViewColumn(name="zoo_cnt"),
-        ViewColumn(name="korean_restaurant_cnt"),
-    ],
-    query="""
-    select
-        city.geo_id,
-        city.geo_name,
-        count(case when category_main = 'Aquarium' THEN 1 END) aquarium_cnt,
-        count(case when category_main = 'Zoo' THEN 1 END) zoo_cnt,
-        count(case when category_main = 'Korean Restaurant' THEN 1 END) korean_restaurant_cnt,
-    from us_addresses__poi.cybersyn.point_of_interest_index poi
-    join us_addresses__poi.cybersyn.point_of_interest_addresses_relationships poi_add 
-        on poi_add.poi_id = poi.poi_id
-    join us_addresses__poi.cybersyn.us_addresses address 
-        on address.address_id = poi_add.address_id
-    join major_us_cities city on city.geo_id = address.id_city
-    where true
-        and category_main in ('Aquarium', 'Zoo', 'Korean Restaurant')
-        and id_country = 'country/USA'
-    group by city.geo_id, city.geo_name
-    """,
-),
+CREATE OR REPLACE VIEW silver.attractions AS
+SELECT
+    city.geo_id,
+    city.geo_name,
+    count(case when category_main = 'Aquarium' THEN 1 END) aquarium_cnt,
+    count(case when category_main = 'Zoo' THEN 1 END) zoo_cnt,
+    count(case when category_main = 'Korean Restaurant' THEN 1 END) korean_restaurant_cnt
+FROM us_addresses__poi.cybersyn.point_of_interest_index poi
+JOIN us_addresses__poi.cybersyn.point_of_interest_addresses_relationships poi_add 
+    ON poi_add.poi_id = poi.poi_id
+JOIN us_addresses__poi.cybersyn.us_addresses address 
+    ON address.address_id = poi_add.address_id
+JOIN silver.major_us_cities city ON city.geo_id = address.id_city
+WHERE true
+    AND category_main in ('Aquarium', 'Zoo', 'Korean Restaurant')
+    AND id_country = 'country/USA'
+GROUP BY city.geo_id, city.geo_name;
 
 
 -- Append the following column definitions to the column list of the CREATE OR ALTER TABLE in steps/04_orchestrate_jobs.sql
